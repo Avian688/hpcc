@@ -45,6 +45,7 @@ void HpccFlavour::established(bool active)
 {
     //state->snd_cwnd = state->B * state->T.dbl();
     state->snd_cwnd = 10000;
+    initPackets = true;
     dynamic_cast<HpccConnection*>(conn)->changeIntersendingTime(state->T.dbl()/(double) state->snd_cwnd);
     EV_DETAIL << "HPCC initial CWND is set to " << state->snd_cwnd << "\n";
     if (active) {
@@ -163,15 +164,20 @@ void HpccFlavour::receivedDataAckInt(uint32_t firstSeqAcked, IntDataVec intData)
         if(firstSeqAcked > state->lastUpdateSeq) {
             //std::cout << "\n firstSeqAcked: " << firstSeqAcked << endl;
             //std::cout << "\n state->lastUpdateSeq: " << state->lastUpdateSeq << endl;
-            state->snd_cwnd = computeWnd(measureInflight(intData), true);
-            state->ssthresh = state->snd_cwnd / 2;
+            double uVal = measureInflight(intData);
+            if(uVal > 0){
+                state->snd_cwnd = computeWnd(uVal, true);
+                state->ssthresh = state->snd_cwnd / 2;
+            }
             conn->emit(cwndSignal, state->snd_cwnd);
-
             state->lastUpdateSeq = state->snd_nxt;
         }
         else {
-            state->snd_cwnd = computeWnd(measureInflight(intData), false);
-            state->ssthresh = state->snd_cwnd / 2;
+            double uVal = measureInflight(intData);
+            if(uVal > 0){
+                state->snd_cwnd = computeWnd(uVal, false);
+                state->ssthresh = state->snd_cwnd / 2;
+            }
             conn->emit(cwndSignal, state->snd_cwnd);
         }
     }
@@ -237,26 +243,43 @@ double HpccFlavour::measureInflight(IntDataVec intData)
         IntMetaData* intDataEntry = intData.at(i);
 
         if(state->L.size() == intData.size()){ //TODO replace with check to ensure the hops are the same, maybe hopID? Look at paper/rfc
-            state->txRate = (intDataEntry->getTxBytes() - state->L.at(i)->getTxBytes())/(intDataEntry->getTs().dbl() - state->L.at(i)->getTs().dbl());
-            //std::cout << "\n state->txRate: " << state->txRate << endl;
-            //std::cout << "\n intDataEntry->getB(): " << intDataEntry->getB() << endl;
-            uPrime = ((std::min(intDataEntry->getQLen(), state->L.at(i)->getQLen()))/(intDataEntry->getB()*state->T.dbl()))+(state->txRate/intDataEntry->getB());
-//            std::cout << "\n Part 1: " << ((std::min(intDataEntry->getQLen(), state->L.at(i)->getQLen()))/(intDataEntry->getB()*state->T.dbl())) << endl;
-//            std::cout << "\n state->L.at(i)->getQLen()" << state->L.at(i)->getQLen() << endl;
-//            std::cout << "\n state->T.dbl()" << state->T.dbl() << endl;
-//            std::cout << "\n Part 2: " << (state->txRate/intDataEntry->getB()) << endl;
-//            std::cout << "\n Hop: " << i << endl;
-//            std::cout << "\n Hop Name: " << intDataEntry->getHopName() << endl;
-//            std::cout << "\n u Part 2: " << (state->txRate/intDataEntry->getB()) << endl;
-//            std::cout << "\n intDataEntry->getB(): " << intDataEntry->getB() << endl;
-            if(uPrime > u) {
-                u = uPrime;
-                tau = intDataEntry->getTs().dbl() - state->L.at(i)->getTs().dbl();
-                //std::cout << "\n intDataEntry->getTs(): " << intDataEntry->getTs() << endl;
-                //std::cout << "\n state->L.at(i)->getTs(): " << state->L.at(i)->getTs() << endl;
+            std::cout << "\n average RTT: " << intDataEntry->getAverageRtt() << endl;
+            if(intDataEntry->getAverageRtt() > 0) {
+                initPackets = false;
+            }
+            else{
+                return 0;
+            }
+
+            if(!initPackets){
+                state->txRate = (intDataEntry->getTxBytes() - state->L.at(i)->getTxBytes())/(intDataEntry->getTs().dbl() - state->L.at(i)->getTs().dbl());
+                //std::cout << "\n state->txRate: " << state->txRate << endl;
+                //std::cout << "\n intDataEntry->getB(): " << intDataEntry->getB() << endl;
+                uPrime = ((std::min(intDataEntry->getQLen(), state->L.at(i)->getQLen()))/(intDataEntry->getB()*state->T.dbl()))+(state->txRate/intDataEntry->getB());
+    //            std::cout << "\n Part 1: " << ((std::min(intDataEntry->getQLen(), state->L.at(i)->getQLen()))/(intDataEntry->getB()*state->T.dbl())) << endl;
+    //            std::cout << "\n state->L.at(i)->getQLen()" << state->L.at(i)->getQLen() << endl;
+    //            std::cout << "\n state->T.dbl()" << state->T.dbl() << endl;
+    //            std::cout << "\n Part 2: " << (state->txRate/intDataEntry->getB()) << endl;
+    //            std::cout << "\n Hop: " << i << endl;
+    //            std::cout << "\n Hop Name: " << intDataEntry->getHopName() << endl;
+    //            std::cout << "\n u Part 2: " << (state->txRate/intDataEntry->getB()) << endl;
+    //            std::cout << "\n intDataEntry->getB(): " << intDataEntry->getB() << endl;
+                if(uPrime > u) {
+                    u = uPrime;
+                    tau = intDataEntry->getTs().dbl() - state->L.at(i)->getTs().dbl();
+                    //std::cout << "\n intDataEntry->getTs(): " << intDataEntry->getTs() << endl;
+                    //std::cout << "\n state->L.at(i)->getTs(): " << state->L.at(i)->getTs() << endl;
+                }
             }
         }
         else{
+            if(intDataEntry->getAverageRtt() > 0) {
+                initPackets = false;
+            }
+            else{
+                return 0;
+            }
+
             state->txRate = intDataEntry->getTxBytes()/intDataEntry->getTs().dbl();
             uPrime = (intDataEntry->getQLen()/(intDataEntry->getB()*state->T.dbl()))+(state->txRate/intDataEntry->getB());
            // std::cout << "\n intDataEntry->getQLen(): " << intDataEntry->getQLen() << endl;

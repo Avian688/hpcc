@@ -43,6 +43,7 @@ class HpccFlavour : public TcpReno
     static simsignal_t USignal;
 
     simtime_t rtt;
+    bool initPackets;
     /** Create and return a HpccStateVariables object. */
     virtual TcpStateVariables *createStateVariables() override
     {

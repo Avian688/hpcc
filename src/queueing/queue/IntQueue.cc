@@ -92,7 +92,7 @@ Packet *IntQueue::pullPacket(cGate *gate)
             if(tcpHeader->getTag<IntTag>()->getRtt() > 0){
                 rtts[std::string(tcpHeader->getTag<IntTag>()->getConnectionId())] = tcpHeader->getTag<IntTag>()->getRtt();
             }
-            std::map<const char*, simtime_t>::iterator lb = rtts.lower_bound(tcpHeader->getTag<IntTag>()->getConnectionId());
+            //std::map<const char*, simtime_t>::iterator lb = rtts.lower_bound(tcpHeader->getTag<IntTag>()->getConnectionId());
 //            if(lb != rtts.end() && !(rtts.key_comp()(tcpHeader->getTag<IntTag>()->getConnectionId(), lb->first)))
 //            {
 //                // key already exists
@@ -105,16 +105,12 @@ Packet *IntQueue::pullPacket(cGate *gate)
 //                // add it to the map
 //                rtts.insert(lb, std::map<const char*, simtime_t>::value_type(tcpHeader->getTag<IntTag>()->getConnectionId(), tcpHeader->getTag<IntTag>()->getRtt()));    // Use lb as a hint to insert,
 //            }
-            std::cout << "\n Connection ID: " << tcpHeader->getTag<IntTag>()->getConnectionId() << endl;
             double averageRtt = 0;
-            //std::cout << "\nCalculating average rtt.." << endl;
             std::cout << "\n_______________" << std::endl;
             for (const auto & [key, value] : rtts){
-                  std::cout << "\nRTT at queue:" << value << std::endl;
                   averageRtt = averageRtt + value.dbl();
             }
             averageRtt = averageRtt/rtts.size();
-            std::cout << "\nAverage RTT at queue:" << averageRtt << std::endl;
             intData->setAverageRtt(averageRtt);
         }
 
