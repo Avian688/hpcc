@@ -106,7 +106,7 @@ Packet *IntQueue::pullPacket(cGate *gate)
 //                rtts.insert(lb, std::map<const char*, simtime_t>::value_type(tcpHeader->getTag<IntTag>()->getConnectionId(), tcpHeader->getTag<IntTag>()->getRtt()));    // Use lb as a hint to insert,
 //            }
             double averageRtt = 0;
-            std::cout << "\n_______________" << std::endl;
+            //std::cout << "\n_______________" << std::endl;
             for (const auto & [key, value] : rtts){
                   averageRtt = averageRtt + value.dbl();
             }

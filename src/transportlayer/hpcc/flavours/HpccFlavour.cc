@@ -32,10 +32,13 @@ void HpccFlavour::initialize()
 {
     TcpReno::initialize();
     state->B = conn->getTcpMain()->par("bandwidth");
+    state->subFlows = conn->getTcpMain()->par("subFlows");
+    state->sharingFlows = conn->getTcpMain()->par("sharingFlows");
+    state->eta = state->eta/state->subFlows;
     state->T = conn->getTcpMain()->par("basePropagationRTT");
     state->u = 0;
     //TODO add Par for number of N. Currently is 10 meaning 10 flows. Look at paper for wAI
-    state->additiveIncrease = ((state->B * state->T.dbl())*(1-state->eta))/10;
+    state->additiveIncrease = ((state->B * state->T.dbl())*(1-state->eta))/state->sharingFlows;
     std::cout << "\n additiveIncrease factor: " << state->additiveIncrease << endl;
     //state->prevWnd = state->B * state->T.dbl();
     state->prevWnd = 10000;
@@ -141,6 +144,10 @@ void HpccFlavour::receivedDataAckInt(uint32_t firstSeqAcked, IntDataVec intData)
 {
     EV_INFO << "\nHPCCInfo ___________________________________________" << endl;
     EV_INFO << "\nHPCCInfo - Received Data Ack" << endl;
+
+    //if(simTime().dbl() > 25){
+    //    state->T = 0.021;
+    //}
     TcpTahoeRenoFamily::receivedDataAck(firstSeqAcked);
 
 //    std::cout << "\nInt Data size: " << intData.size() << endl;
@@ -238,12 +245,13 @@ double HpccFlavour::measureInflight(IntDataVec intData)
 {
     double u = 0;
     double tau;
+    double bottleneckAverageRtt;
     for(int i = 0; i < intData.size(); i++){ //Start at front of queue. First item is first hop etc.
         double uPrime = 0;
         IntMetaData* intDataEntry = intData.at(i);
 
         if(state->L.size() == intData.size()){ //TODO replace with check to ensure the hops are the same, maybe hopID? Look at paper/rfc
-            std::cout << "\n average RTT: " << intDataEntry->getAverageRtt() << endl;
+            //std::cout << "\n average RTT: " << intDataEntry->getAverageRtt() << endl;
             if(intDataEntry->getAverageRtt() > 0) {
                 initPackets = false;
             }
@@ -255,7 +263,7 @@ double HpccFlavour::measureInflight(IntDataVec intData)
                 state->txRate = (intDataEntry->getTxBytes() - state->L.at(i)->getTxBytes())/(intDataEntry->getTs().dbl() - state->L.at(i)->getTs().dbl());
                 //std::cout << "\n state->txRate: " << state->txRate << endl;
                 //std::cout << "\n intDataEntry->getB(): " << intDataEntry->getB() << endl;
-                uPrime = ((std::min(intDataEntry->getQLen(), state->L.at(i)->getQLen()))/(intDataEntry->getB()*state->T.dbl()))+(state->txRate/intDataEntry->getB());
+                uPrime = ((std::min(intDataEntry->getQLen(), state->L.at(i)->getQLen()))/(intDataEntry->getB()*intDataEntry->getAverageRtt()))+(state->txRate/intDataEntry->getB());
     //            std::cout << "\n Part 1: " << ((std::min(intDataEntry->getQLen(), state->L.at(i)->getQLen()))/(intDataEntry->getB()*state->T.dbl())) << endl;
     //            std::cout << "\n state->L.at(i)->getQLen()" << state->L.at(i)->getQLen() << endl;
     //            std::cout << "\n state->T.dbl()" << state->T.dbl() << endl;
@@ -267,6 +275,8 @@ double HpccFlavour::measureInflight(IntDataVec intData)
                 if(uPrime > u) {
                     u = uPrime;
                     tau = intDataEntry->getTs().dbl() - state->L.at(i)->getTs().dbl();
+                    bottleneckAverageRtt = intDataEntry->getAverageRtt();
+                    //tau = intDataEntry->getAverageRtt();
                     //std::cout << "\n intDataEntry->getTs(): " << intDataEntry->getTs() << endl;
                     //std::cout << "\n state->L.at(i)->getTs(): " << state->L.at(i)->getTs() << endl;
                 }
@@ -280,24 +290,26 @@ double HpccFlavour::measureInflight(IntDataVec intData)
                 return 0;
             }
 
-            state->txRate = intDataEntry->getTxBytes()/intDataEntry->getTs().dbl();
-            uPrime = (intDataEntry->getQLen()/(intDataEntry->getB()*state->T.dbl()))+(state->txRate/intDataEntry->getB());
+            state->txRate = intDataEntry->getTxBytes()/intDataEntry->getAverageRtt();
+            uPrime = (intDataEntry->getQLen()/(intDataEntry->getB()*intDataEntry->getAverageRtt()))+(state->txRate/intDataEntry->getB());
            // std::cout << "\n intDataEntry->getQLen(): " << intDataEntry->getQLen() << endl;
             if(uPrime > u) {
                 u = uPrime;
                 tau = intDataEntry->getTs().dbl();
+                bottleneckAverageRtt = intDataEntry->getAverageRtt();
+                //tau = intDataEntry->getAverageRtt();
             }
         }
     }
     conn->emit(txRateSignal, state->txRate);
     conn->emit(uSignal, u);
     //std::cout << "\n initial u val: " << u << endl;
-    tau = std::min(tau, state->T.dbl());
+    //tau = std::min(tau, state->T.dbl());
     conn->emit(tauSignal, tau);
 //    std::cout << "\n Tau: " << tau << endl;
 //    std::cout << "\n state->T: " << state->T.dbl() << endl;
 
-    state->u = (1-(tau/state->T.dbl()))*state->u+(tau/state->T.dbl())*u;
+    state->u = (1-(tau/bottleneckAverageRtt))*state->u+(tau/bottleneckAverageRtt)*u;
     conn->emit(USignal, state->u);
     return state->u;
 }

@@ -23,4 +23,6 @@ simple Hpcc extends Tcp
         @class("inet::tcp::Hpcc");
         int bandwidth = default(125000000);
         double basePropagationRTT @unit(s) = default(0.01s);
+        int subFlows = default(1);
+        int sharingFlows = default(2);
 }

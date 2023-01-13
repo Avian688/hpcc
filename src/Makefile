@@ -1,5 +1,5 @@
 #
-# OMNeT++/OMNEST Makefile for $(LIB_PREFIX)hpcc
+# OMNeT++/OMNEST Makefile for $(LIB_PREFIX)orbtcp
 #
 # This file was generated with the command:
 #  opp_makemake --make-so -f --deep -KINET4_4_PROJ=../../inet4.4 -DINET_IMPORT -I$$\(INET4_4_PROJ\)/src -L$$\(INET4_4_PROJ\)/src -lINET$$\(D\)
@@ -7,7 +7,7 @@
 
 # Name of target to be created (-o option)
 TARGET_DIR = .
-TARGET_NAME = $(LIB_PREFIX)hpcc$(D)
+TARGET_NAME = $(LIB_PREFIX)orbtcp$(D)
 TARGET = $(TARGET_NAME)$(SHARED_LIB_SUFFIX)
 TARGET_IMPLIB = $(TARGET_NAME)$(IMPLIB_SUFFIX)
 TARGET_IMPDEF = $(TARGET_NAME)$(IMPDEF_SUFFIX)

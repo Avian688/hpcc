@@ -7,6 +7,7 @@ import inet.networklayer.configurator.ipv4.Ipv4NetworkConfigurator;
 import inet.node.inet.Router;
 import ned.DatarateChannel;
 import ned.IBidirectionalChannel;
+import inet.common.scenario.ScenarioManager;
 
 network simplenetworkvar
 {
@@ -24,7 +25,7 @@ network simplenetworkvar
         }
         channel satLine2 extends DatarateChannel //look at 
         {
-            delay = 1.5ms;
+            delay = 5ms;
             datarate = 1Gbps;
         }
         channel bottleneckline1 extends DatarateChannel
@@ -53,6 +54,9 @@ network simplenetworkvar
         }
         router2: Router {
             @display("p=327,140");
+        }
+        scenarioManager: ScenarioManager {
+            @display("p=100,300;is=s");
         }
     connections:
         client1.pppg++ <--> satLine1 <--> router1.pppg++;

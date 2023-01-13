@@ -27,7 +27,7 @@ struct HpccFamilyStateVariables extends TcpTahoeRenoFamilyStateVariables
     double normalisedInflight;
     double normalisedInflightPrev;
     double u = 1;
-    double eta = 0.95;
+    double eta = 0.95;  //0.95
     int incStage = 0;
     int maxStage = 5;
     uint32_t prevWnd;
@@ -36,6 +36,9 @@ struct HpccFamilyStateVariables extends TcpTahoeRenoFamilyStateVariables
     uint32_t lastUpdateSeq;
     
     double R; //pacing rate
+    
+    int subFlows = 1;
+    int sharingFlows = 2;
 };
 
 cplusplus(HpccFamilyStateVariables) {{

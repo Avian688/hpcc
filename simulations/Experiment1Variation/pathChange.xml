@@ -1,0 +1,6 @@
+<scenario>
+	<at t="25">
+		<set-channel-param src-module="router1" src-gate="pppg$o[0]" par="delay" value="2ms"/>
+		<set-channel-param src-module="router2" src-gate="pppg$o[0]" par="delay" value="2ms"/>
+	</at>
+</scenario>
