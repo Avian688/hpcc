@@ -24,10 +24,25 @@ namespace queueing {
 
 class IntQueue : public PacketQueue {
 protected:
+    static simsignal_t avgRttSignal;
+
     long txBytes;
-    std::map<std::string, simtime_t> rtts;
+    simtime_t avgRtt;
+    simtime_t avgRttTimer;
+    cMessage *averageRttTimerMsg = nullptr;
+    //std::map<std::string, simtime_t> rtts;
+    std::set<long> flowIds;
+    int prevSharingFlows;
+    double sumRttByCwnd;
+    double sumRttSquareByCwnd;
+
 protected:
     virtual void initialize(int stage) override;
+    virtual void handleMessage(cMessage *message) override;
+    virtual void processTimer();
+    virtual void scheduleTimer();
+
+    virtual void finish() override;
 public:
     virtual void pushPacket(Packet *packet, cGate *gate) override;
     virtual Packet *pullPacket(cGate *gate) override;

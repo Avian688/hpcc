@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>orbtcp</name>
+	<name>hpcc</name>
 	<comment></comment>
 	<projects>
 		<project>inet4.4</project>

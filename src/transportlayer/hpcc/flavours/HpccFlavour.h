@@ -41,7 +41,10 @@ class HpccFlavour : public TcpReno
     static simsignal_t tauSignal; // will record total number of RTOs
     static simsignal_t uSignal;
     static simsignal_t USignal;
+    static simsignal_t additiveIncreaseSignal;
+    static simsignal_t sharingFlowsSignal;
 
+    size_t connId;
     simtime_t rtt;
     bool initPackets;
     /** Create and return a HpccStateVariables object. */
@@ -68,7 +71,9 @@ class HpccFlavour : public TcpReno
 
     virtual double measureInflight(IntDataVec intData);
 
+    virtual size_t getConnId();
     virtual simtime_t getRtt();
+    virtual unsigned int getCwnd();
 
 
     };

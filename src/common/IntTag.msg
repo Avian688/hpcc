@@ -23,11 +23,13 @@ class IntMetaData extends cObject
 	long txBytes; // Transmitted Bytes
 	long b; //Link bandwidth capacity
 	double averageRtt;
+	int numOfFlows;
 }
 
 class IntTag extends TagBase
 {
-    string connectionId;
+    long connId;
     IntDataVec intData;
     simtime_t rtt;
+    unsigned int cwnd;
 }

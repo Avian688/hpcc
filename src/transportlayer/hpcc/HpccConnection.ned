@@ -26,9 +26,13 @@ simple HpccConnection extends TcpConnection
         @signal[tau];
         @signal[u];
         @signal[U];
+        @signal[additiveIncrease];
+        @signal[sharingFlows];
         
         @statistic[txRate](record=vector; interpolationmode=sample-hold);
         @statistic[tau](record=vector; interpolationmode=sample-hold);
         @statistic[u](record=vector; interpolationmode=sample-hold);
         @statistic[U](record=vector; interpolationmode=sample-hold);
+        @statistic[additiveIncrease](record=vector; interpolationmode=sample-hold);
+		@statistic[sharingFlows](record=vector; interpolationmode=sample-hold);
 }

@@ -25,4 +25,5 @@ simple Hpcc extends Tcp
         double basePropagationRTT @unit(s) = default(0.01s);
         int subFlows = default(1);
         int sharingFlows = default(2);
+        double additiveIncreasePercent = default(0.05);
 }

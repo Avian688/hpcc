@@ -21,6 +21,10 @@ simple IntQueue extends PacketQueue
 {
     parameters:
         @class("inet::queueing::IntQueue");
+        
+        @signal[avgRtt];
+        @statistic[avgRtt](record=vector; interpolationmode=sample-hold);
+        
         packetCapacity = default(100);
         dropperClass = default("inet::queueing::PacketAtCollectionEndDropper");
 }

@@ -36,7 +36,7 @@ network manhattan
         channel satHop extends DatarateChannel //look at 
         {
             delay = 1.5ms;
-            datarate = 10Gbps;
+            datarate = 1Gbps;
         }
         channel bottleneckHop extends DatarateChannel //look at 
         {
@@ -45,7 +45,7 @@ network manhattan
         }
         channel satHopLarge extends DatarateChannel //look at 
         {
-            delay = 10.5ms;
+            delay = 9ms;
             datarate = 10Gbps;
         }
     submodules:
@@ -59,10 +59,10 @@ network manhattan
             @display("p=475,-20");
         }
         server1: StandardHost {
-            @display("p=616.896,452.592");
+            @display("p=574.56,271.152");
         }
         server2: StandardHost {
-            @display("p=632.016,357.84");
+            @display("p=474.768,336.672");
         }
         router2: Router {
             @display("p=205,62");
@@ -106,30 +106,22 @@ network manhattan
         router24: Router {
             @display("p=386,337");
         }
-        router25: Router {
-            @display("p=475,337");
-        }
-        router26: Router {
-            @display("p=562.464,336.672");
-        }
         client3: StandardHost {
-            @display("p=386,414");
+            @display("p=295.344,413.28");
         }
         server3: StandardHost {
-            @display("p=625.968,282.24002");
+            @display("p=385.056,413.28");
         }
     connections:
         client1.pppg++ <--> satHop <--> router2.pppg++;
         client2.pppg++ <--> satHop <--> router6.pppg++;
-        client3.pppg++ <--> satHopLarge <--> router24.pppg++;
+        client3.pppg++ <--> satHopLarge <--> router23.pppg++;
         router2.pppg++ <--> satHop <--> router3.pppg++;
         router3.pppg++ <--> satHop <--> router4.pppg++;
         router4.pppg++ <--> satHop <--> router5.pppg++;
         router21.pppg++ <--> satHop <--> router22.pppg++;
         router22.pppg++ <--> satHop <--> router23.pppg++;
         router23.pppg++ <--> satHop <--> router24.pppg++;
-        router24.pppg++ <--> satHop <--> router25.pppg++;
-
         router6.pppg++ <--> satHop <--> router11.pppg++;
         router11.pppg++ <--> satHop <--> router16.pppg++;
         router16.pppg++ <--> satHop <--> router21.pppg++;
@@ -137,11 +129,9 @@ network manhattan
         router5.pppg++ <--> satHop <--> router10.pppg++;
         router10.pppg++ <--> satHop <--> router15.pppg++;
         router15.pppg++ <--> satHop <--> router20.pppg++;
-        router20.pppg++ <--> satHop <--> router25.pppg++;
 
-        router25.pppg++ <--> bottleneckHop <--> router26.pppg++;
+        router20.pppg++ <--> satHop <--> server1.pppg++;
+        router24.pppg++ <--> satHop <--> server2.pppg++;
+        router24.pppg++ <--> satHop <--> server3.pppg++;
 
-        router26.pppg++ <--> satHop <--> server1.pppg++;
-        router26.pppg++ <--> satHop <--> server2.pppg++;
-        router26.pppg++ <--> satHop <--> server3.pppg++;
 }

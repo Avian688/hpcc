@@ -1125,9 +1125,9 @@ uint32_t HpccConnection::sendSegment(uint32_t bytes)
 
     ASSERT(tcpHeader->getHeaderLength() == tmpTcpHeader->getHeaderLength());
 
-    tcpHeader->addTagIfAbsent<IntTag>()->setConnectionId(const_cast<char*>(getLocalAddr().str().c_str()));
+    tcpHeader->addTagIfAbsent<IntTag>()->setConnId((unsigned long)dynamic_cast<HpccFlavour*>(tcpAlgorithm)->getConnId());
     tcpHeader->addTagIfAbsent<IntTag>()->setRtt(dynamic_cast<HpccFlavour*>(tcpAlgorithm)->getRtt());
-
+    tcpHeader->addTagIfAbsent<IntTag>()->setCwnd(dynamic_cast<HpccFlavour*>(tcpAlgorithm)->getCwnd());
     // send it
     sendToIP(tcpSegment, tcpHeader);
 

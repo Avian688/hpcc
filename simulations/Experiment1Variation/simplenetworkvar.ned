@@ -21,17 +21,18 @@ network simplenetworkvar
         channel satLine1 extends DatarateChannel //look at 
         {
             delay = 1ms;
-            datarate = 1Gbps;
+            datarate = 10Gbps;
         }
         channel satLine2 extends DatarateChannel //look at 
         {
             delay = 5ms;
-            datarate = 1Gbps;
+            datarate = 10Gbps;
         }
         channel bottleneckline1 extends DatarateChannel
         {
             delay = 0.5ms;
             datarate = 1Gbps;  //125000 bytes BDP = 83 packets
+            per = 0.00005;
         }
     submodules:
         client1: StandardHost {
@@ -55,9 +56,9 @@ network simplenetworkvar
         router2: Router {
             @display("p=327,140");
         }
-        scenarioManager: ScenarioManager {
-            @display("p=100,300;is=s");
-        }
+        //scenarioManager: ScenarioManager {
+        //    @display("p=100,300;is=s");
+        //}
     connections:
         client1.pppg++ <--> satLine1 <--> router1.pppg++;
         client2.pppg++ <--> satLine2 <--> router1.pppg++;

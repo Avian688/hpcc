@@ -1,0 +1,16 @@
+<scenario>
+    <at t="2.5">
+        <disconnect src-module="client2" src-gate="pppg$o[0]" />
+        <disconnect src-module="router3" src-gate="pppg$o[0]" />
+    </at>
+    <at t="2.5">
+        <disconnect src-module="router4" src-gate="pppg$o[0]" />
+        <disconnect src-module="server2" src-gate="pppg$o[1]" />
+    </at>
+    <at t="2.5">
+        <set-channel-param src-module="client2" src-gate="pppg$o[1]" par="delay" value="0ms"/>
+        <set-channel-param src-module="router1" src-gate="pppg$o[2]" par="delay" value="0ms"/>
+        <set-channel-param src-module="client2" src-gate="pppg$o[1]" par="datarate" value="10Gbps"/>
+        <set-channel-param src-module="router1" src-gate="pppg$o[2]" par="datarate" value="10Gbps"/>
+    </at>
+</scenario>

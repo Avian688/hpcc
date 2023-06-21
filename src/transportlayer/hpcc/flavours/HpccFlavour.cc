@@ -22,6 +22,8 @@ simsignal_t HpccFlavour::txRateSignal = cComponent::registerSignal("txRate");
 simsignal_t HpccFlavour::tauSignal = cComponent::registerSignal("tau");
 simsignal_t HpccFlavour::uSignal = cComponent::registerSignal("u");
 simsignal_t HpccFlavour::USignal = cComponent::registerSignal("U");
+simsignal_t HpccFlavour::additiveIncreaseSignal = cComponent::registerSignal("additiveIncrease");
+simsignal_t HpccFlavour::sharingFlowsSignal = cComponent::registerSignal("sharingFlows");
 
 HpccFlavour::HpccFlavour() : TcpReno(),
     state((HpccStateVariables *&)TcpAlgorithm::state)
@@ -34,12 +36,14 @@ void HpccFlavour::initialize()
     state->B = conn->getTcpMain()->par("bandwidth");
     state->subFlows = conn->getTcpMain()->par("subFlows");
     state->sharingFlows = conn->getTcpMain()->par("sharingFlows");
+    state->additiveIncreasePercent = conn->getTcpMain()->par("additiveIncreasePercent");
     state->eta = state->eta/state->subFlows;
     state->T = conn->getTcpMain()->par("basePropagationRTT");
     state->u = 0;
     //TODO add Par for number of N. Currently is 10 meaning 10 flows. Look at paper for wAI
-    state->additiveIncrease = ((state->B * state->T.dbl())*(1-state->eta))/state->sharingFlows;
-    std::cout << "\n additiveIncrease factor: " << state->additiveIncrease << endl;
+    //state->additiveIncrease = ((state->B * state->T.dbl())*(1-state->eta))/state->sharingFlows;
+    state->additiveIncrease = 1;
+    //std::cout << "\n additiveIncrease factor: " << state->additiveIncrease << endl;
     //state->prevWnd = state->B * state->T.dbl();
     state->prevWnd = 10000;
 }
@@ -48,8 +52,9 @@ void HpccFlavour::established(bool active)
 {
     //state->snd_cwnd = state->B * state->T.dbl();
     state->snd_cwnd = 10000;
+    connId = std::hash<std::string>{}(conn->localAddr.str() + "/" + std::to_string(conn->localPort) + "/" + conn->remoteAddr.str() + "/" + std::to_string(conn->remotePort));
     initPackets = true;
-    dynamic_cast<HpccConnection*>(conn)->changeIntersendingTime(state->T.dbl()/(double) state->snd_cwnd);
+    //dynamic_cast<HpccConnection*>(conn)->changeIntersendingTime(state->T.dbl()/(double) state->snd_cwnd);
     EV_DETAIL << "HPCC initial CWND is set to " << state->snd_cwnd << "\n";
     if (active) {
         // finish connection setup with ACK (possibly piggybacked on data)
@@ -145,9 +150,10 @@ void HpccFlavour::receivedDataAckInt(uint32_t firstSeqAcked, IntDataVec intData)
     EV_INFO << "\nHPCCInfo ___________________________________________" << endl;
     EV_INFO << "\nHPCCInfo - Received Data Ack" << endl;
 
-    //if(simTime().dbl() > 25){
-    //    state->T = 0.021;
-    //}
+//    if(simTime().dbl() >= 2.5){
+//        state->T = 0.01;
+//        state->additiveIncrease = ((state->B * state->T.dbl())*(1-state->eta))/2;
+//    }
     TcpTahoeRenoFamily::receivedDataAck(firstSeqAcked);
 
 //    std::cout << "\nInt Data size: " << intData.size() << endl;
@@ -194,7 +200,7 @@ void HpccFlavour::receivedDataAckInt(uint32_t firstSeqAcked, IntDataVec intData)
 //    std::cout << "\n state->T" << state->T.dbl() << endl;
 //    std::cout << "\n state->snd_cwnd" << state->snd_cwnd;
 //    std::cout << "\n state->u" << state->u;
-    dynamic_cast<HpccConnection*>(conn)->changeIntersendingTime(state->T.dbl()/((double) state->snd_cwnd/1460));
+    //dynamic_cast<HpccConnection*>(conn)->changeIntersendingTime(state->srtt.dbl()/((double) state->snd_cwnd/1460));
 
     if (state->sack_enabled && state->lossRecovery) {
             // RFC 3517, page 7: "Once a TCP is in the loss recovery phase the following procedure MUST
@@ -246,6 +252,7 @@ double HpccFlavour::measureInflight(IntDataVec intData)
     double u = 0;
     double tau;
     double bottleneckAverageRtt;
+    double bottleneckBandwidth;
     for(int i = 0; i < intData.size(); i++){ //Start at front of queue. First item is first hop etc.
         double uPrime = 0;
         IntMetaData* intDataEntry = intData.at(i);
@@ -275,7 +282,12 @@ double HpccFlavour::measureInflight(IntDataVec intData)
                 if(uPrime > u) {
                     u = uPrime;
                     tau = intDataEntry->getTs().dbl() - state->L.at(i)->getTs().dbl();
+                    state->sharingFlows = intDataEntry->getNumOfFlows();
                     bottleneckAverageRtt = intDataEntry->getAverageRtt();
+                    if(bottleneckAverageRtt <= 0){
+                        bottleneckAverageRtt = state->srtt.dbl();
+                    }
+                    bottleneckBandwidth = intDataEntry->getB();
                     //tau = intDataEntry->getAverageRtt();
                     //std::cout << "\n intDataEntry->getTs(): " << intDataEntry->getTs() << endl;
                     //std::cout << "\n state->L.at(i)->getTs(): " << state->L.at(i)->getTs() << endl;
@@ -297,6 +309,9 @@ double HpccFlavour::measureInflight(IntDataVec intData)
                 u = uPrime;
                 tau = intDataEntry->getTs().dbl();
                 bottleneckAverageRtt = intDataEntry->getAverageRtt();
+                if(bottleneckAverageRtt <= 0){
+                    bottleneckAverageRtt = state->srtt.dbl();
+                }
                 //tau = intDataEntry->getAverageRtt();
             }
         }
@@ -305,12 +320,20 @@ double HpccFlavour::measureInflight(IntDataVec intData)
     conn->emit(uSignal, u);
     //std::cout << "\n initial u val: " << u << endl;
     //tau = std::min(tau, state->T.dbl());
+    //tau = state->srtt.dbl();
     conn->emit(tauSignal, tau);
+    conn->emit(sharingFlowsSignal, state->sharingFlows);
 //    std::cout << "\n Tau: " << tau << endl;
 //    std::cout << "\n state->T: " << state->T.dbl() << endl;
 
     state->u = (1-(tau/bottleneckAverageRtt))*state->u+(tau/bottleneckAverageRtt)*u;
     conn->emit(USignal, state->u);
+
+    state->additiveIncrease = ((bottleneckBandwidth * state->srtt.dbl())*(state->additiveIncreasePercent))/state->sharingFlows;
+    dynamic_cast<HpccConnection*>(conn)->changeIntersendingTime(state->srtt.dbl()/((double) state->snd_cwnd/1460));
+
+    conn->emit(additiveIncreaseSignal, state->additiveIncrease);
+
     return state->u;
 }
 
@@ -342,9 +365,19 @@ uint32_t HpccFlavour::computeWnd(double u, bool updateWc)
     return w;
 }
 
+size_t HpccFlavour::getConnId()
+{
+    return connId;
+}
+
 simtime_t HpccFlavour::getRtt()
 {
     return rtt;
+}
+
+unsigned int HpccFlavour::getCwnd()
+{
+    return state->snd_cwnd;
 }
 
 } // namespace tcp

@@ -29,7 +29,7 @@ struct HpccFamilyStateVariables extends TcpTahoeRenoFamilyStateVariables
     double u = 1;
     double eta = 0.95;  //0.95
     int incStage = 0;
-    int maxStage = 5;
+    int maxStage = 500;
     uint32_t prevWnd;
     uint32_t additiveIncrease;
     
