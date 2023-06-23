@@ -38,7 +38,9 @@ struct HpccFamilyStateVariables extends TcpTahoeRenoFamilyStateVariables
     double R; //pacing rate
     
     int subFlows = 1;
-    int sharingFlows = 2;
+    int sharingFlows = 1;
+    
+    double additiveIncreasePercent = 0.05;
 };
 
 cplusplus(HpccFamilyStateVariables) {{
